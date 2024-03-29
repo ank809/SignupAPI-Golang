@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"net/mail"
 
@@ -74,4 +75,38 @@ func SignupUser(c *gin.Context) {
 func ValidateEmail(email string) bool {
 	_, err := mail.ParseAddress(email)
 	return err == nil
+}
+
+func Loginuser(c *gin.Context) {
+	var user models.User
+
+	if err := c.BindJSON(&user); err != nil {
+		fmt.Println(err)
+		return
+	}
+	log.Println(user.Password)
+	collection_name := "users"
+	collection := database.OpenCollection(database.Client, collection_name)
+	var foundUser models.User
+
+	filter := bson.M{"username": user.Username}
+	if err := collection.FindOne(context.Background(), filter).Decode(&foundUser); err != nil {
+		fmt.Println(err)
+		c.JSON(http.StatusBadRequest, "User not found")
+		return
+	}
+	hashed_password := foundUser.Password
+	fmt.Println([]byte(hashed_password))
+	// fmt.Println(user.Password)
+	// pass, _ := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	// fmt.Println(pass)
+	err := bcrypt.CompareHashAndPassword([]byte(hashed_password), []byte(user.Password))
+
+	if err != nil {
+		fmt.Println("Incorrect password")
+		c.JSON(http.StatusBadRequest, "Incorrect password")
+		return
+	}
+	c.JSON(200, "Login Successfully")
+
 }
