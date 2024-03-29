@@ -18,14 +18,15 @@ import (
 func SignupUser(c *gin.Context) {
 	var user models.User
 	id := primitive.NewObjectID()
+
+	if err := c.BindJSON(&user); err != nil {
+		fmt.Println(err)
+		return
+	}
 	pass := user.Password
 	hashed_password, errs := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
 	if errs != nil {
 		fmt.Println(errs)
-		return
-	}
-	if err := c.BindJSON(&user); err != nil {
-		fmt.Println(err)
 		return
 	}
 	user.ID = id
